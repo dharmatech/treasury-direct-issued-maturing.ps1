@@ -1,10 +1,20 @@
+
+Param(
+    $a = (Get-Date (Get-Date   ).AddDays(-7) -Format 'yyyy-MM-dd'), 
+    $b = (Get-Date (Get-Date $a).AddDays(35) -Format 'yyyy-MM-dd')
+    )
+
 # Upcoming auctions
 #
 # https://www.treasurydirect.gov/auctions/upcoming/
 
+# $a = if ($a -eq $null) { Get-Date (Get-Date).AddDays(-7) -Format 'yyyy-MM-dd' } else { $a }
+
+# $b = if ($b -eq $null) { Get-Date (Get-Date $a).AddDays(40) -Format 'yyyy-MM-dd' } else { $b }
+
 # $a = '2023-01-26'
-$a = '2023-02-06'
-$b = '2023-03-13'
+# $a = '2023-02-06'
+# $b = '2023-03-13'
 # $b = '2023-04-01'
 
 $result_issued    = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?issueDate={0},{1}&format=json'    -f $a, $b)
@@ -169,6 +179,11 @@ $fields = @(
 
 $table | Format-Table $fields
 
-# ----------------------------------------------------------------------
+exit
 
-# $result = Invoke-RestMethod -Uri 'https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&days=5'
+# ----------------------------------------------------------------------
+# Example invocations
+
+.\treasury-direct-issued-maturing.ps1 
+
+.\treasury-direct-issued-maturing.ps1 2023-02-01 
