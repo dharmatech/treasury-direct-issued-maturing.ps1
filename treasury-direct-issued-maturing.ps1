@@ -2,8 +2,9 @@
 #
 # https://www.treasurydirect.gov/auctions/upcoming/
 
-$a = '2023-01-26'
-$b = '2023-03-01'
+# $a = '2023-01-26'
+$a = '2023-02-06'
+$b = '2023-03-13'
 # $b = '2023-04-01'
 
 $result_issued    = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?issueDate={0},{1}&format=json'    -f $a, $b)
