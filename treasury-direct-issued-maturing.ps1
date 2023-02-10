@@ -74,6 +74,8 @@ $table = foreach ($date in (date-range $a $days))
     $issued_sum   = get-sum $issued
     $maturing_sum = get-sum $maturing
 
+    $issued_security_terms = ($issued | Group-Object securityTerm | ForEach-Object Name) -join ' '
+
     [pscustomobject]@{
         date = $date
         issued_bills_sum = $issued_bills_sum; maturing_bills_sum = $maturing_bills_sum
@@ -94,6 +96,8 @@ $table = foreach ($date in (date-range $a $days))
         # auction_issuing = if (($auction_issued_dates | Where-Object { $_ -match $date }) -eq $null) { '' } else { '*' }
 
         auction_issuing = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | ForEach-Object { if ($_ -ne $null) {$_.auctionDate.Substring(0,10) }} | Sort-Object -Unique) -join ' '
+
+        issued_security_terms = $issued_security_terms
 
         # (($result_auctioned | Group-Object issueDate)[1].Group | Group-Object auctionDate | ForEach-Object Name)[0].Substring(0,10)
     }
@@ -175,6 +179,7 @@ $fields = @(
 
     'auction'
     'auction_issuing'
+    'issued_security_terms'
 )
 
 $table | Format-Table $fields
