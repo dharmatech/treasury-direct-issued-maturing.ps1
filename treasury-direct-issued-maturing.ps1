@@ -4,6 +4,8 @@ Param(
     $b = (Get-Date (Get-Date $a).AddDays(35) -Format 'yyyy-MM-dd')
     )
 
+Write-Host $a
+
 # Upcoming auctions
 #
 # https://www.treasurydirect.gov/auctions/upcoming/
@@ -179,10 +181,62 @@ $fields = @(
 
     'auction'
     'auction_issuing'
-    'issued_security_terms'
+    # 'issued_security_terms'
 )
 
 $table | Format-Table $fields
+
+# ----------------------------------------------------------------------
+
+function modified-duration ([decimal]$coupon, [decimal]$face_value, [decimal]$frequency, [decimal]$maturity, [decimal]$yield)
+{
+    $price = ($coupon * $face_value / $frequency) * (1 - (1 / [math]::Pow(1 + $yield / $frequency, $maturity * $frequency))) / ($yield / $frequency) + $face_value / [math]::Pow(1 + $yield / $frequency, $maturity * $frequency)
+
+    (($coupon * $face_value / $frequency) / [math]::Pow($yield / $frequency, 2) *
+    ((1 - 1 / [math]::Pow(1 + $yield / $frequency, $maturity * $frequency))) +
+    ($maturity * $frequency * ($face_value - (($coupon * $face_value / 2) / ($yield / $frequency)))   /   [math]::Pow(1 + ($yield / $frequency), $maturity * $frequency + 1))) / 
+    $price / $frequency    
+}
+
+# PARAMETER      
+# $coupon        $security.interestRate / 100
+# $face_value    $security.pricePer100
+# $frequency     2 (always assuming semi-annual)
+# $maturity      $security.term (parse years out)
+# $yield         $security.interestRate / 100
+
+foreach ($security in $result_issued)
+{
+    if ($security.interestRate.Length -gt 0)
+    {
+        $term = [decimal] ($security.term -replace '-.*', '')
+
+        $interest_rate = $security.interestRate / 100
+
+        # @{
+        #     term = $term
+        #     interestRate = $security.interestRate
+        #     price = $security.pricePer100
+        # }
+        
+        # [PSCustomObject]@{
+        #     modified_duration = modified-duration $interest_rate $security.pricePer100 2 $term $interest_rate
+        # }
+
+        $security | Add-Member -MemberType NoteProperty -Name modified_duration -Value (modified-duration $interest_rate $security.pricePer100 2 $term $interest_rate)
+    }
+}
+
+$result_issued | ft *
+
+$result_issued | ft cusip, issueDate, securityType, securityTerm, maturityDate, interestRate, refCpiOnIssueDate, refCpiOnDatedDate, announcementDate, auctionDate, @{ Label = 'modified_duration'; Expression = { $_.modified_duration.ToString('N') } }
+
+# [decimal] $coupon = $security.interestRate
+# [decimal] $face_value = $security.pricePer100
+# [decimal] $frequency = 2
+# [decimal] $maturity = 30
+# [decimal] $yield = $security.interestRate / 100
+
 
 exit
 
@@ -194,3 +248,8 @@ exit
 .\treasury-direct-issued-maturing.ps1 2023-02-01 
 
 .\treasury-direct-issued-maturing.ps1 2023-02-06 2023-03-13
+
+
+
+
+$result_issued | Format-Table issueDate, securityType, interestRate
