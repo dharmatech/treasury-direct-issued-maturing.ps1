@@ -1,7 +1,7 @@
 
 Param(
     $a = (Get-Date (Get-Date   ).AddDays(-7) -Format 'yyyy-MM-dd'), 
-    $b = (Get-Date (Get-Date $a).AddDays(35) -Format 'yyyy-MM-dd')
+    $b = (Get-Date (Get-Date $a).AddDays(45) -Format 'yyyy-MM-dd')
     )
 
 # Upcoming auctions
@@ -95,6 +95,8 @@ $table = foreach ($date in (date-range $a $days))
 
         auction_issuing = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | ForEach-Object { if ($_ -ne $null) {$_.auctionDate.Substring(0,10) }} | Sort-Object -Unique) -join ' '
 
+        offering_amount  = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+
         # (($result_auctioned | Group-Object issueDate)[1].Group | Group-Object auctionDate | ForEach-Object Name)[0].Substring(0,10)
     }
 }
@@ -126,11 +128,12 @@ function format-to-billions ($val)
 }
 
 
-Write-Host '           BILLS                  NOTES                  BONDS                  TOTAL' -NoNewline
-#           date       issued maturing change issued maturing change issued maturing change issued maturing change auction auction_issuing
+Write-Host '               BILLS                  NOTES                  BONDS                  TOTAL' -NoNewline
+#           date           issued maturing change issued maturing change issued maturing change issued maturing change auction auction_issuing                  offering_amount
 
 $fields = @(
-    'date',
+    # 'date',
+    @{ Label = 'date'; Expression = { Get-Date $_.date -Format 'yyyy-MM-dd ddd' } } 
 
     # @{ Label = 'issued_bills_sum';     Expression = { $_.issued_bills_sum.ToString('N0')     }; Align = 'right' }
     # @{ Label = 'maturing_bills_sum';   Expression = { $_.maturing_bills_sum.ToString('N0')   }; Align = 'right' }
@@ -175,9 +178,15 @@ $fields = @(
 
     'auction'
     'auction_issuing'
+    # 'offering_amount'
+
+    @{ Label = 'offering_amount';   Expression = { format-to-billions $_.offering_amount }; Align = 'right' }    
+
 )
 
-$table | Format-Table $fields
+$table | Where-Object { (Get-Date $_.date).DayOfWeek -cnotin 'Saturday', 'Sunday' } | Format-Table $fields
+
+# $table | Format-Table $fields
 
 exit
 
@@ -189,3 +198,28 @@ exit
 .\treasury-direct-issued-maturing.ps1 2023-02-01 
 
 .\treasury-direct-issued-maturing.ps1 2023-02-06 2023-03-13
+
+# ----------------------------------------------------------------------
+
+# $result_search = Invoke-RestMethod 'http://www.treasurydirect.gov/TA_WS/securities/search?auctionDate=2023-02-01,2023-03-01&format=json'
+
+
+
+# $result_search    = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?announcementDate={0},{1}&format=json'    -f '2023-02-13', '2023-03-01')
+
+# $result_search    = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?issueDate={0},{1}&format=json'    -f '2023-02-13', '2023-03-01')
+
+# $result_search = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?dateFieldName=issueDate&startDate=02/21/2023,02/23/2023&format=json')
+
+
+# $date = '2023-02-21'
+
+# ($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group[0].offeringAmount
+
+# ($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Select-Object offeringAmount
+
+# (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+
+
+
+# (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | ForEach-Object { if ($_ -ne $null) {$_.auctionDate.Substring(0,10) }} | Sort-Object -Unique) -join ' '
