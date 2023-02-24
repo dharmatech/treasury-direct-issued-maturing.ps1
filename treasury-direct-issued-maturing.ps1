@@ -40,11 +40,21 @@ function date-range ($a, $n)
     }
 }
 
-
+# function get-sum ($ls)
+# {
+#     if ($ls -eq $null) { 0 } else { ($ls | Measure-Object -Property totalAccepted -Sum).Sum }
+# }
 
 function get-sum ($ls)
 {
-    if ($ls -eq $null) { 0 } else { ($ls | Measure-Object -Property totalAccepted -Sum).Sum }
+    if ($ls -eq $null) 
+    { 
+        0 
+    } 
+    else 
+    { 
+        ($ls | Measure-Object -Property totalAccepted -Sum).Sum - ($ls | Measure-Object -Property somaAccepted -Sum).Sum 
+    }
 }
 
 
@@ -180,8 +190,8 @@ $fields = @(
     'auction_issuing'
     # 'offering_amount'
 
-    @{ Label = 'offering_amount';   Expression = { format-to-billions $_.offering_amount }; Align = 'right' }    
-
+    @{ Label = 'offering_amount';   Expression = { format-to-billions $_.offering_amount };               Align = 'right' }    
+    # @{ Label = 'potential';         Expression = { format-to-billions ($_.maturing - $_.offering_amount) }; Align = 'right' }    
 )
 
 $table | Where-Object { (Get-Date $_.date).DayOfWeek -cnotin 'Saturday', 'Sunday' } | Format-Table $fields
