@@ -21,6 +21,16 @@ $result_issued    = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/secu
 $result_maturing  = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?maturityDate={0},{1}&format=json' -f $a, $b)
 $result_auctioned = Invoke-RestMethod ('http://www.treasurydirect.gov/TA_WS/securities/search?auctionDate={0},{1}&format=json'  -f $a, $b)
 
+# ----------------------------------------------------------------------
+# workaround for newer versions of PowerShell
+foreach ($row in $result_issued + $result_maturing + $result_auctioned)
+{
+    $row.issueDate    = Get-Date $row.issueDate    -Format 's'
+    $row.maturityDate = Get-Date $row.maturityDate -Format 's'
+    $row.auctionDate  = Get-Date $row.auctionDate  -Format 's'
+}
+# ----------------------------------------------------------------------
+
 $auction_dates        = $result_auctioned | Group-Object auctionDate | ForEach-Object Name
 $auction_issued_dates = $result_auctioned | Group-Object issueDate | ForEach-Object Name
 
