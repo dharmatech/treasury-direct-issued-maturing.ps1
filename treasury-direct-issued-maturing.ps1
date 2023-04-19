@@ -111,6 +111,12 @@ $table = foreach ($date in (date-range $a $days))
     }
 }
 
+# ----------------------------------------------------------------------
+
+
+
+# ----------------------------------------------------------------------
+
 # function field-format ($name)
 # {
 #     @{ Label = $name; Expression = { $_.$name.ToString('N0') }; Align = 'right' }
@@ -190,13 +196,74 @@ $fields = @(
     'auction_issuing'
     # 'offering_amount'
 
-    @{ Label = 'offering_amount';   Expression = { format-to-billions $_.offering_amount }; Align = 'right' }    
+    @{ Label = 'offering_amount';   Expression = { format-to-billions $_.offering_amount }; Align = 'right' }
+    
+    # @{ Expression = 'change_with_weekend' }
+
+    @{ Label = 'change_with_weekend'; Expression = { if ($_.change_with_weekend -ne $null) { $_.change_with_weekend / 1000 / 1000 / 1000 } }; FormatString = 'N0'; Align = 'right' }
 
 )
 
-$table | Where-Object { (Get-Date $_.date).DayOfWeek -cnotin 'Saturday', 'Sunday' } | Format-Table $fields
+# $table | Where-Object { (Get-Date $_.date).DayOfWeek -cnotin 'Saturday', 'Sunday' } | Format-Table $fields
+
+
+# function non-zero-issued-maturing ($row)
+# {
+    
+# }
+
+# ----------------------------------------------------------------------
+
+$weekend = 0
+
+foreach ($row in $table)
+{
+    if ((Get-Date $row.date).DayOfWeek -in 'Saturday', 'Sunday')
+    {
+        $weekend = $weekend + $row.change
+    }
+    else
+    {
+        if ($weekend -ne 0)
+        {
+            $row | Add-Member -MemberType NoteProperty -Name change_with_weekend -Value ($row.change + $weekend)
+
+            $weekend = 0
+        }
+    }
+}
+# ----------------------------------------------------------------------
+
+# $table | ft ($fields + 'change_with_weekend')
+
+
+# $table | select -Skip 5 | Select-Object -First 17 | ft ($fields + @{ Expression = 'change_with_weekend' })
+
+
+# $table | select -Skip 4 | Select-Object -First 17 | ft ($fields + @{ Label = 'change_with_weekend'; Expression = { if ($_.change_with_weekend -ne $null) { $_.change_with_weekend / 1000 / 1000 / 1000 } }; FormatString = 'N0'; Align = 'right' })
+
+
+
+$table | Where-Object { 
+    if ((Get-Date $_.date).DayOfWeek -cnotin 'Saturday', 'Sunday')
+    {
+        $_
+    }
+    elseif ($_.change -ne 0) {
+        $_        
+    }
+    
+} | Format-Table $fields
 
 # $table | Format-Table $fields
+
+# $table | Format-Table $fields
+
+# Adjust for weekends
+
+# $table | Select-Object -First 10 | ft *
+
+# $table[0]
 
 exit
 
@@ -233,3 +300,15 @@ exit
 
 
 # (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | ForEach-Object { if ($_ -ne $null) {$_.auctionDate.Substring(0,10) }} | Sort-Object -Unique) -join ' '
+
+# ----------------------------------------------------------------------
+
+($result_maturing | Where-Object maturityDate -Match '2023-04-15')[-1]
+
+
+$result_type_tips = $result_maturing | Where-Object type -EQ TIPS
+
+$result_maturing[0..2] + $result_type_tips | Format-Table securityType, type
+
+
+$result_maturing[0..2] + $result_type_tips | Export-Csv c:\temp\out.csv -NoTypeInformation
