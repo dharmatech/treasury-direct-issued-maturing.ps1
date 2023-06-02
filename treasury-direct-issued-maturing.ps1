@@ -1,7 +1,9 @@
 
 Param(
     $a = (Get-Date (Get-Date   ).AddDays(-7) -Format 'yyyy-MM-dd'), 
-    $b = (Get-Date (Get-Date $a).AddDays(45) -Format 'yyyy-MM-dd')
+    $b = (Get-Date (Get-Date $a).AddDays(45) -Format 'yyyy-MM-dd'),
+    [switch]$html,
+    [switch]$data
     )
 
 # Upcoming auctions
@@ -204,6 +206,8 @@ $rows = $table | Where-Object {
     
 } 
 
+if ($data) { $rows; exit }
+
 $rows | Format-Table $fields
 # ----------------------------------------------------------------------
 # HTML
@@ -241,6 +245,9 @@ function value-to-class ($val)
     elseif ($val -lt 0) { 'table-danger' }
     else                { 'table-default' }
 }
+
+if ($html)
+{
 
 $file = 'treasury-direct-issued-maturing-partial.html'
 
@@ -311,7 +318,7 @@ foreach ($elt in $rows)
     </tbody>
 </table>
 "@ >> $file
-
+}
 
 # @"
 # <table class="table table-sm">
@@ -520,3 +527,9 @@ $table = foreach ($date in (date-range $a $days))
 }
 # ----------------------------------------------------------------------
 $result_issued[0]
+# ----------------------------------------------------------------------
+($result_auctioned | Group-Object issueDate | Where-Object Name -Match '2023-05-16').Group
+# ----------------------------------------------------------------------
+$result_issued | ft *
+
+$result_issued | ? cusip -eq 912796XQ7
