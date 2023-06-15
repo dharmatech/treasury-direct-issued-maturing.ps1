@@ -75,6 +75,16 @@ $table = foreach ($date in (date-range $a $days))
     $issued_sum   = get-sum $issued
     $maturing_sum = get-sum $maturing
 
+    $change = $issued_sum - $maturing_sum
+
+    $offeringAmount = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+
+    $somaTendered = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object somaTendered -Sum).Sum
+
+    # $projected_change = $offeringAmount + $somaTendered - $maturing_sum
+
+    $projected_change = if ($offeringAmount -ne $null) { $offeringAmount + $somaTendered - $maturing_sum }
+
     [pscustomobject]@{
         date = $date
         issued_bills_sum = $issued_bills_sum;   maturing_bills_sum = $maturing_bills_sum;   bills_change = $issued_bills_sum - $maturing_bills_sum
@@ -83,14 +93,20 @@ $table = foreach ($date in (date-range $a $days))
         
         issued = $issued_sum
         maturing = $maturing_sum
-        change = $issued_sum - $maturing_sum
+        change = $change
 
         auction         = if (($auction_dates        | Where-Object { $_ -match $date }) -eq $null) { '' } else { '*' }
         # auction_issuing = if (($auction_issued_dates | Where-Object { $_ -match $date }) -eq $null) { '' } else { '*' }
 
         auction_issuing = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | ForEach-Object { if ($_ -ne $null) {$_.auctionDate.Substring(0,10) }} | Sort-Object -Unique) -join ' '
 
-        offering_amount  = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+        offeringAmount  = $offeringAmount
+
+        somaTendered = $somaTendered
+
+        projected_change = $projected_change
+
+        # projected_change = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum - ($issued_sum - $maturing_sum)
 
         # (($result_auctioned | Group-Object issueDate)[1].Group | Group-Object auctionDate | ForEach-Object Name)[0].Substring(0,10)
     }
@@ -142,9 +158,6 @@ function format-to-billions ($val)
     ($val / 1000 / 1000 / 1000).ToString('N0')    
 }
 
-Write-Host '               BILLS                  NOTES                  BONDS                  TOTAL' -NoNewline
-#           date           issued maturing change issued maturing change issued maturing change issued maturing change auction auction_issuing                  offering_amount
-
 $fields = @(
     
     @{ Label = 'date'; Expression = { Get-Date $_.date -Format 'yyyy-MM-dd ddd' } } 
@@ -165,8 +178,9 @@ $fields = @(
     @{ Label = 'change_with_weekend'; Expression = { if ($_.change_with_weekend -ne $null) { format-to-billions $_.change_with_weekend } }; Align = 'right' }
     'auction'
     'auction_issuing'
-    @{ Label = 'offering_amount';     Expression = { if ($_.offering_amount     -ne $null) { format-to-billions $_.offering_amount } };     Align = 'right' }
-  
+    @{ Label = 'offeringAmount';      Expression = { if ($_.offeringAmount      -ne $null) { format-to-billions $_.offeringAmount } };      Align = 'right' }
+    @{ Label = 'somaTendered';        Expression = { if ($_.somaTendered        -ne $null) { format-to-billions $_.somaTendered    } };     Align = 'right' }
+    @{ Label = 'projected_change';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change    } }; Align = 'right' }
     
 )
 # ----------------------------------------------------------------------
@@ -207,6 +221,9 @@ $rows = $table | Where-Object {
 } 
 
 if ($data) { $rows; exit }
+
+Write-Host '               BILLS                  NOTES                  BONDS                  TOTAL' -NoNewline
+#           date           issued maturing change issued maturing change issued maturing change issued maturing change auction auction_issuing                  offering_amount
 
 $rows | Format-Table $fields
 # ----------------------------------------------------------------------
@@ -533,3 +550,11 @@ $result_issued[0]
 $result_issued | ft *
 
 $result_issued | ? cusip -eq 912796XQ7
+
+
+# ----------------------------------------------------------------------
+
+
+($result_auctioned | Group-Object issueDate | Where-Object Name -Match '2023-06-13').Group | ft offeringAmount, soma*, *
+
+($result_auctioned | Group-Object issueDate | Where-Object Name -Match '2023-06-13').Group | ft offeringAmount, soma*, *
