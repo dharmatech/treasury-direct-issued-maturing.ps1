@@ -76,10 +76,15 @@ $table = foreach ($date in (date-range $a $days))
 
     $change = $issued_sum - $maturing_sum
 
-    $offeringAmount = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+    # $offeringAmount = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+    # $somaTendered   = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object somaTendered -Sum).Sum
 
-    $somaTendered = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object somaTendered -Sum).Sum
+    $offeringAmount = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+    $somaTendered   = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object somaTendered -Sum).Sum    
 
+
+
+    
     # $projected_change = $offeringAmount + $somaTendered - $maturing_sum
 
     $projected_change = if ($offeringAmount -ne $null) { $offeringAmount + $somaTendered - $maturing_sum }
@@ -413,3 +418,9 @@ $result_issued | ? cusip -eq 912796XQ7
 ($result_auctioned | Group-Object issueDate | Where-Object Name -Match '2023-06-13').Group | ft offeringAmount, soma*, *
 
 ($result_auctioned | Group-Object issueDate | Where-Object Name -Match '2023-06-13').Group | ft offeringAmount, soma*, *
+
+
+
+$date = '2023-06-13'
+
+$offeringAmount = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
