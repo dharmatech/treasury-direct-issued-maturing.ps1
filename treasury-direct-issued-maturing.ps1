@@ -130,6 +130,8 @@ foreach ($row in $table)
         {
             $row | Add-Member -MemberType NoteProperty -Name change_with_weekend -Value ($row.change + $weekend)
 
+            $row | Add-Member -MemberType NoteProperty -Name weekend -Value $weekend
+
             $weekend = 0
         }
     }
@@ -162,6 +164,16 @@ function format-to-billions ($val)
     ($val / 1000 / 1000 / 1000).ToString('N0')    
 }
 
+function calculate-projected-change-with-weekend ($obj)
+{
+    if ($obj.projected_change -ne $null)
+    {
+        $weekend = if ($obj.weekend -eq $null) { 0 } else { $obj.weekend }
+
+        format-to-billions ($obj.projected_change + $weekend)
+    }
+}
+
 $fields = @(
     
     @{ Label = 'date'; Expression = { Get-Date $_.date -Format 'yyyy-MM-dd ddd' } } 
@@ -185,6 +197,9 @@ $fields = @(
     @{ Label = 'offeringAmount';      Expression = { if ($_.offeringAmount      -ne $null) { format-to-billions $_.offeringAmount } };      Align = 'right' }
     @{ Label = 'somaTendered';        Expression = { if ($_.somaTendered        -ne $null) { format-to-billions $_.somaTendered    } };     Align = 'right' }
     @{ Label = 'projected_change';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change    } }; Align = 'right' }
+
+    # @{ Label = 'projected_change_wknd';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change    } }; Align = 'right' }
+    # @{ Label = 'projected_change_with_wknd';    Expression = { if ($_.projected_change    -ne $null) { calculate-projected-change-with-weekend $_    } }; Align = 'right' }
     
 )
 # ----------------------------------------------------------------------
