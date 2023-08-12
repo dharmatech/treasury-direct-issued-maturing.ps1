@@ -159,9 +159,33 @@ foreach ($row in $table)
 #     }    
 # }
 
+function color-number ($val)
+{
+    if ($val -gt 0) { 
+        $PSStyle.Foreground.Green + ('{0,5:N2}' -f $val) + $PSStyle.Reset 
+    } 
+    elseif ($val -lt 0) {
+        $PSStyle.Foreground.Red + ('{0,5:N2}' -f $val) + $PSStyle.Reset
+    }
+    else { '{0,5:N2}' -f $val }
+}
+
 function format-to-billions ($val)
 {
     ($val / 1000 / 1000 / 1000).ToString('N0')    
+}
+
+function format-change ($val)
+{
+    $val = $val / 1000 / 1000 / 1000
+
+    if ($val -gt 0) { 
+        $PSStyle.Foreground.Green + ('{0,5:N0}' -f $val) + $PSStyle.Reset 
+    } 
+    elseif ($val -lt 0) {
+        $PSStyle.Foreground.Red + ('{0,5:N0}' -f $val) + $PSStyle.Reset
+    }
+    else { '{0,5:N0}' -f $val }    
 }
 
 function calculate-projected-change-with-weekend ($obj)
@@ -180,16 +204,20 @@ $fields = @(
         
     @{ Label = 'issued';   Expression = { format-to-billions $_.issued_bills_sum   }; Align = 'right' }
     @{ Label = 'maturing'; Expression = { format-to-billions $_.maturing_bills_sum }; Align = 'right' }
-    @{ Label = 'change';   Expression = { format-to-billions $_.bills_change       }; Align = 'right' }        
+    # @{ Label = 'change';   Expression = { format-to-billions $_.bills_change       }; Align = 'right' }        
+    @{ Label = 'change';   Expression = { format-change $_.bills_change       }; Align = 'right' }        
     @{ Label = 'issued';   Expression = { format-to-billions $_.issued_notes_sum   }; Align = 'right' }
     @{ Label = 'maturing'; Expression = { format-to-billions $_.maturing_notes_sum }; Align = 'right' }    
-    @{ Label = 'change';   Expression = { format-to-billions $_.notes_change       }; Align = 'right' }
+    # @{ Label = 'change';   Expression = { format-to-billions $_.notes_change       }; Align = 'right' }
+    @{ Label = 'change';   Expression = { format-change $_.notes_change       }; Align = 'right' }
     @{ Label = 'issued';   Expression = { format-to-billions $_.issued_bonds_sum   }; Align = 'right' }
     @{ Label = 'maturing'; Expression = { format-to-billions $_.maturing_bonds_sum }; Align = 'right' }        
-    @{ Label = 'change';   Expression = { format-to-billions $_.bonds_change       }; Align = 'right' }
+    # @{ Label = 'change';   Expression = { format-to-billions $_.bonds_change       }; Align = 'right' }
+    @{ Label = 'change';   Expression = { format-change $_.bonds_change       }; Align = 'right' }
     @{ Label = 'issued';   Expression = { format-to-billions $_.issued             }; Align = 'right' }
     @{ Label = 'maturing'; Expression = { format-to-billions $_.maturing           }; Align = 'right' }
-    @{ Label = 'change';   Expression = { format-to-billions $_.change             }; Align = 'right' }    
+    # @{ Label = 'change';   Expression = { format-to-billions $_.change             }; Align = 'right' }    
+    @{ Label = 'change';   Expression = { format-change $_.change             }; Align = 'right' }    
 
     @{ Label = 'change_with_weekend'; Expression = { if ($_.change_with_weekend -ne $null) { format-to-billions $_.change_with_weekend } }; Align = 'right' }
     'auction'
