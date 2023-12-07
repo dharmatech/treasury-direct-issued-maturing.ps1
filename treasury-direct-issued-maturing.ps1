@@ -84,6 +84,31 @@ $table = foreach ($date in (date-range $a $days))
 
 
 
+
+
+
+    $offeringAmount_bills = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Bill | Measure-Object offeringAmount -Sum).Sum
+    $offeringAmount_notes = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Note | Measure-Object offeringAmount -Sum).Sum
+    $offeringAmount_bonds = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Bond | Measure-Object offeringAmount -Sum).Sum
+
+    $somaTendered_bills = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Bill | Measure-Object somaTendered -Sum).Sum
+    $somaTendered_notes = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Note | Measure-Object somaTendered -Sum).Sum
+    $somaTendered_bonds = (($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Bond | Measure-Object somaTendered -Sum).Sum
+
+    $projected_change_bills = if ($offeringAmount_bills -ne $null) { $offeringAmount_bills + $somaTendered_bills - $maturing_bills_sum }
+    $projected_change_notes = if ($offeringAmount_notes -ne $null) { $offeringAmount_notes + $somaTendered_notes - $maturing_notes_sum }
+    $projected_change_bonds = if ($offeringAmount_bonds -ne $null) { $offeringAmount_bonds + $somaTendered_bonds - $maturing_bonds_sum }
+
+
+    # ($result_issued | Group-Object issueDate | Where-Object Name -Match $date).Group | Where-Object securityType -EQ Note | ft *
+
+    # $date = '2023-12-15'
+
+
+
+
+
+
     
     # $projected_change = $offeringAmount + $somaTendered - $maturing_sum
 
@@ -109,6 +134,10 @@ $table = foreach ($date in (date-range $a $days))
         somaTendered = $somaTendered
 
         projected_change = $projected_change
+
+        projected_change_bills = $projected_change_bills
+        projected_change_notes = $projected_change_notes
+        projected_change_bonds = $projected_change_bonds
 
         # projected_change = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum - ($issued_sum - $maturing_sum)
 
@@ -225,6 +254,10 @@ $fields = @(
     @{ Label = 'offeringAmount';      Expression = { if ($_.offeringAmount      -ne $null) { format-to-billions $_.offeringAmount } };      Align = 'right' }
     @{ Label = 'somaTendered';        Expression = { if ($_.somaTendered        -ne $null) { format-to-billions $_.somaTendered    } };     Align = 'right' }
     @{ Label = 'projected_change';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change    } }; Align = 'right' }
+    
+    @{ Label = 'bills';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change_bills    } }; Align = 'right' }
+    @{ Label = 'notes';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change_notes    } }; Align = 'right' }
+    @{ Label = 'bonds';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change_bonds    } }; Align = 'right' }
 
     # @{ Label = 'projected_change_wknd';    Expression = { if ($_.projected_change    -ne $null) { format-to-billions $_.projected_change    } }; Align = 'right' }
     # @{ Label = 'projected_change_with_wknd';    Expression = { if ($_.projected_change    -ne $null) { calculate-projected-change-with-weekend $_    } }; Align = 'right' }
