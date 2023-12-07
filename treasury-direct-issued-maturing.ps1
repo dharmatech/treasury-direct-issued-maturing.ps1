@@ -284,6 +284,8 @@ exit
 
 .\treasury-direct-issued-maturing.ps1 2023-02-06 2023-03-13
 
+. .\treasury-direct-issued-maturing.ps1 2023-01-01 2023-08-23
+
 # ----------------------------------------------------------------------
 
 # $result_search = Invoke-RestMethod 'http://www.treasurydirect.gov/TA_WS/securities/search?auctionDate=2023-02-01,2023-03-01&format=json'
@@ -467,3 +469,72 @@ $result_issued | ? cusip -eq 912796XQ7
 $date = '2023-06-13'
 
 $offeringAmount = (($result_auctioned | Group-Object issueDate | Where-Object Name -Match $date).Group | Measure-Object offeringAmount -Sum).Sum
+
+
+# ----------------------------------------------------------------------
+$issued_bonds     = $result_issued   | Where-Object issueDate -Match $date    | Where-Object securityType -EQ Bond
+
+$result_issued | ft *
+# ----------------------------------------------------------------------
+
+($result_issued + $result_maturing + $result_auctioned) | ConvertTo-Json -Depth 100 > C:\temp\out.json
+
+dir C:\temp\out.json
+
+# ----------------------------------------------------------------------
+# chart
+# ----------------------------------------------------------------------
+
+$items = $rows | ? date -le (Get-Date -Format 'yyyy-MM-dd')
+
+$json = @{
+    chart = @{
+        type = 'bar'
+        data = @{
+
+            labels = $items | % date
+
+            datasets = @(
+                @{ label = 'bills';      data =   $items | % bills_change }
+                @{ label = 'notes';      data =   $items | % notes_change }
+                @{ label = 'bonds';      data =   $items | % bonds_change }
+            )
+        }
+        options = @{
+            title = @{ display = $true; text = 'Treasury Direct : Change' }
+            scales = @{
+                xAxes = @( @{ stacked = $true } )
+                yAxes = @( @{ stacked = $true } )
+            }
+            plugins = @{
+                tickFormat = '$0,'
+            }            
+        }
+    }
+} | ConvertTo-Json -Depth 100
+
+$result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
+
+$id = ([System.Uri] $result.url).Segments[-1]
+
+if ($save_iframe)
+{
+    $html_template -f 'Net Liquidity', $id > net-liquidity-chart.html
+}
+
+if ($display_chart_url)
+{
+    Write-Host
+
+    Write-Host ('Net liquidity: https://quickchart.io/chart-maker/view/{0}' -f $id) -ForegroundColor Yellow
+}
+else
+{
+    Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+}
+
+# ----------------------------------------------------------------------
+
+$result_issued[-1]
+
+$result_auctioned[0]
