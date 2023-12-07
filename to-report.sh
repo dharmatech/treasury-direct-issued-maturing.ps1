@@ -15,10 +15,14 @@ mkdir -p ../reports/treasury-direct-issued-maturing
 
 # pwsh -Command "./treasury-direct-issued-maturing.ps1 *>&1 | Out-String -Stream -Width 230 > ../reports/treasury-direct-issued-maturing/`date +%Y-%m-%d`.txt"
 
-pwsh -Command "./treasury-direct-issued-maturing.ps1 *>&1 | Out-String -Stream -Width 230 > script-out"
+# pwsh -Command "./treasury-direct-issued-maturing.ps1 *>&1 | Out-String -Stream -Width 230 > script-out"
+
+script -q -c 'pwsh -Command "./treasury-direct-issued-maturing.ps1"' script-out
 
 cat script-out | 
     /home/dharmatech/go/bin/terminal-to-html -preview |
     sed 's/pre-wrap/pre/' |
     sed 's/terminal-to-html Preview/treasury-direct-issued-maturing.ps1/' |
-    sed 's/<body>/<body style="width: fit-content;">/' > ../reports/treasury-direct-issued-maturing/`date +%Y-%m-%d`.html
+    sed 's/<body>/<body style="width: fit-content;">/' > ../reports/treasury-direct-issued-maturing/latest.html
+
+cp ../reports/treasury-direct-issued-maturing/latest.html ../reports/treasury-direct-issued-maturing/`date +%Y-%m-%d`.html
